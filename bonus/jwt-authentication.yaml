@@ -1,0 +1,58 @@
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: jwt-auth-policy
+  namespace: default
+spec:
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: httpbin-route-jwt
+  jwt:
+    providers:
+    - name: imesh-auth
+      issuer: "https://auth.company.local"
+      audience:
+      - "imesh-api"
+      remoteJWKS:
+        uri: "https://auth.company.local/.well-known/jwks.json"
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: httpbin-route-jwt
+  namespace: default
+spec:
+  parentRefs:
+  - name: imesh-gateway
+  hostnames:
+  - "api.company.local"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /protected
+    backendRefs:
+    - name: httpbin
+      namespace: apps
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: httpbin-route-public
+  namespace: default
+spec:
+  parentRefs:
+  - name: imesh-gateway
+  hostnames:
+  - "api.company.local"
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /public
+    backendRefs:
+    - name: httpbin
+      namespace: apps
+      port: 80

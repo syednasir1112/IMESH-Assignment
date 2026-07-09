@@ -1,79 +1,121 @@
-# Kubernetes Gateway API Implementation
+# IMESH Kubernetes Technical Assessment
 
-Production-ready Kubernetes implementation using Gateway API, Envoy Gateway, and cert-manager.
+## Overview
+This repository contains the Kubernetes manifests and written responses for the IMESH technical assessment. The deployment target is a k3s cluster on AWS EC2.
 
 ## Architecture
-
-- **Gateway API**: v1.1.0
-- **Envoy Gateway**: v1.2.0
-- **cert-manager**: v1.15.1
-- **Runtime**: k3d (Kubernetes v1.30+)
+The solution uses k3s as the Kubernetes runtime, Envoy Gateway for north-south traffic, cert-manager for certificate issuance, and three sample services: nginx, httpbin, and echoserver.
 
 ## Prerequisites
+- AWS EC2 instance running Ubuntu 22.04
+- Inbound access for SSH, HTTP, and HTTPS
+- `kubectl`
+- `helm`
+- `curl`
 
-- Docker Desktop
-- kubectl
-- Helm
-- k3d
+## EC2 Setup
+```bash
+git clone <repository-url>
+cd imesh-assignment
+export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+```
 
-## Quick Start
+## k3s Installation
+```bash
+curl -sfL https://get.k3s.io | sh -
+sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
+sudo chown "$USER":"$USER" ~/.kube/config
+kubectl get nodes
+```
 
-```powershell
-# Add to C:\Windows\System32\drivers\etc\hosts:
-# 127.0.0.1 web.company.local
-# 127.0.0.1 api.company.local
-# 127.0.0.1 test.company.local
+## Gateway API Installation
+```bash
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.1.0/standard-install.yaml
+kubectl get crd | grep gateway
+```
 
-.\scripts\create-cluster.ps1
-.\scripts\install-envoy.ps1
-.\scripts\install-cert-manager.ps1
-.\scripts\deploy-all.ps1
+## Envoy Gateway Installation
+```bash
+helm repo add envoy-gateway https://gateway.envoyproxy.io
+helm repo update
+helm install eg envoy-gateway/envoy-gateway -n envoy-gateway-system --create-namespace --version v1.2.0
+kubectl get pods -n envoy-gateway-system
+kubectl get gatewayclass
+```
+
+## cert-manager Installation
+```bash
+helm repo add jetstack https://charts.jetstack.io
+helm repo update
+helm install cert-manager jetstack/cert-manager -n cert-manager --create-namespace --version v1.15.1 --set crds.enabled=true
+kubectl get pods -n cert-manager
+kubectl get crd | grep cert-manager
+```
+
+## Deployment
+```bash
+kubectl apply -f assignment-1/
+kubectl apply -f assignment-2/
+kubectl apply -f assignment-3/
+kubectl apply -f bonus/
 ```
 
 ## Verification
-
-```powershell
+```bash
+kubectl get nodes
 kubectl get pods -A
-kubectl get gateway
-kubectl get httproute
-kubectl get certificate
-```
-
-## Testing
-
-```powershell
-curl http://web.company.local/
-curl http://api.company.local/
-curl http://test.company.local/
-curl -vk https://api.company.local/
+kubectl get gateway -A
+kubectl get httproute -A
+kubectl get certificate -A
+curl -H "Host: web.company.local" http://18.117.135.42
+curl -H "Host: api.company.local" http://18.117.135.42/get
+curl -H "Host: test.company.local" http://18.117.135.42
+curl -vk https://18.117.135.42
 ```
 
 ## Project Structure
-
-```
-.
-├── assignment-1/          # Application deployments
-├── assignment-2/          # Gateway API configuration
-├── assignment-3/          # TLS certificates
-├── assignment-4/          # Networking documentation
-├── assignment-5/          # Troubleshooting guide
-├── assignment-6/          # Production architecture
-├── bonus/                 # JWT authentication
-└── scripts/               # Installation scripts
+```text
+imesh-assignment/
+├── README.md
+├── assignment-1/
+│   ├── nginx-deployment.yaml
+│   ├── nginx-service.yaml
+│   ├── httpbin-deployment.yaml
+│   ├── httpbin-service.yaml
+│   ├── echoserver-deployment.yaml
+│   └── echoserver-service.yaml
+├── assignment-2/
+│   ├── gateway.yaml
+│   ├── httproutes.yaml
+│   ├── rate-limit.yaml
+│   ├── retry-policy.yaml
+│   ├── timeout-policy.yaml
+│   ├── rewrite-policy.yaml
+│   └── header-injection.yaml
+├── assignment-3/
+│   ├── issuer.yaml
+│   ├── clusterissuer.yaml
+│   ├── certificate.yaml
+│   └── gateway-tls.yaml
+├── assignment-4/
+│   └── networking-fundamentals.md
+├── assignment-5/
+│   └── troubleshooting.md
+├── assignment-6/
+│   └── production-design.md
+├── bonus/
+│   └── jwt-authentication.yaml
+└── screen-recording-checklist.md
 ```
 
 ## Cleanup
-
-```powershell
+```bash
 kubectl delete -f bonus/
 kubectl delete -f assignment-3/
 kubectl delete -f assignment-2/
 kubectl delete -f assignment-1/
-k3d cluster delete imesh-lab
+helm uninstall cert-manager -n cert-manager
+helm uninstall eg -n envoy-gateway-system
+kubectl delete -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.1.0/standard-install.yaml
+sudo /usr/local/bin/k3s-uninstall.sh
 ```
-
-## Domains
-
-- web.company.local → nginx
-- api.company.local → httpbin
-- test.company.local → echoserver

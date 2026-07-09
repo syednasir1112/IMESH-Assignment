@@ -1,0 +1,20 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: imesh-gateway-tls
+  namespace: default
+spec:
+  gatewayClassName: eg
+  listeners:
+  - name: https
+    protocol: HTTPS
+    hostname: "*.company.local"
+    port: 443
+    tls:
+      mode: Terminate
+      certificateRefs:
+      - kind: Secret
+        name: imesh-tls-secret
+    allowedRoutes:
+      namespaces:
+        from: Same

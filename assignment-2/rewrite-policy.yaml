@@ -1,0 +1,10 @@
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: HTTPRouteFilter
+metadata:
+  name: url-rewrite-filter
+  namespace: default
+spec:
+  urlRewrite:
+    path:
+      type: ReplacePrefixMatch
+      replacePrefixMatch: /

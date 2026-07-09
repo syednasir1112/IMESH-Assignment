@@ -1,0 +1,17 @@
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: ClientTrafficPolicy
+metadata:
+  name: header-injection
+  namespace: default
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: Gateway
+    name: imesh-gateway
+  headers:
+    earlyRequestHeaders:
+      add:
+      - name: x-company
+        value: imesh
+      - name: x-env
+        value: assessment

@@ -1,0 +1,89 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: nginx-route
+  namespace: default
+spec:
+  parentRefs:
+  - name: imesh-gateway
+  hostnames:
+  - web.company.local
+  rules:
+  - matches:
+    - path:
+        type: Exact
+        value: /
+    backendRefs:
+    - name: nginx
+      namespace: apps
+      port: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /web
+    backendRefs:
+    - name: nginx
+      namespace: apps
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: httpbin-route
+  namespace: default
+spec:
+  parentRefs:
+  - name: imesh-gateway
+  hostnames:
+  - api.company.local
+  rules:
+  - matches:
+    - path:
+        type: Exact
+        value: /
+    backendRefs:
+    - name: httpbin
+      namespace: apps
+      port: 80
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api
+    filters:
+    - type: ExtensionRef
+      extensionRef:
+        group: gateway.envoyproxy.io
+        kind: HTTPRouteFilter
+        name: url-rewrite-filter
+    backendRefs:
+    - name: httpbin
+      namespace: apps
+      port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: echoserver-route
+  namespace: default
+spec:
+  parentRefs:
+  - name: imesh-gateway
+  hostnames:
+  - test.company.local
+  rules:
+  - matches:
+    - path:
+        type: Exact
+        value: /
+    backendRefs:
+    - name: echoserver
+      namespace: apps
+      port: 8080
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /test
+    backendRefs:
+    - name: echoserver
+      namespace: apps
+      port: 8080
